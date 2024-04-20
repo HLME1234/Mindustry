@@ -74,24 +74,23 @@ public class ServerControl implements ApplicationListener{
 
     public Cons<GameOverEvent> gameOverListener = event -> {
         if(state.rules.waves){
-            info("Game over! Reached wave @ with @ players online on map @.", state.wave, Groups.player.size(), Strings.capitalize(state.map.plainName()));
+            info("游戏结束！已到达第 @ 波，@ 名玩家在线，地图为 @。", state.wave, Groups.player.size(), Strings.capitalize(state.map.plainName()));
         }else{
-            info("Game over! Team @ is victorious with @ players online on map @.", event.winner.name, Groups.player.size(), Strings.capitalize(state.map.plainName()));
+            info("游戏结束！队伍 @ 获胜，@ 名玩家在线，地图为 @。", event.winner.name, Groups.player.size(), Strings.capitalize(state.map.plainName()));
         }
 
         //set the next map to be played
         Map map = maps.getNextMap(lastMode, state.map);
         if(map != null){
             Call.infoMessage((state.rules.pvp
-                    ? "[accent]The " + event.winner.coloredName() + " team is victorious![]\n" : "[scarlet]Game over![]\n")
-                    + "\nNext selected map: [accent]" + map.name() + "[white]"
-                    + (map.hasTag("author") ? " by[accent] " + map.author() + "[white]" : "") + "." +
-                    "\nNew game begins in " + Config.roundExtraTime.num() + " seconds.");
-
+                    ? "[accent]队伍 " + event.winner.coloredName() + " 获胜![]\n" : "[scarlet]游戏结束![]\n")
+                    + "\n下一张选中的地图: [accent]" + map.name() + "[white]"
+                    + (map.hasTag("author") ? " 制作者[accent] " + map.author() + "[white]" : "") + "." +
+                    "\n新游戏将在" + Config.roundExtraTime.num() + "秒后开始。");
             state.gameOver = true;
             Call.updateGameOver(event.winner);
 
-            info("Selected next map to be @.", map.plainName());
+            info("已选择下一张地图：@。", map.plainName());
 
             play(() -> world.loadMap(map, map.applyRules(lastMode)));
         }else{
@@ -138,7 +137,7 @@ public class ServerControl implements ApplicationListener{
                 try{
                     socketOutput.println(formatColors(text + "&fr", false));
                 }catch(Throwable e1){
-                    err("Error occurred logging to socket: @", e1.getClass().getSimpleName());
+                    err("连接至套接字时发生错误：@", e1.getClass().getSimpleName());
                 }
             }
         };
@@ -159,7 +158,7 @@ public class ServerControl implements ApplicationListener{
                 if(fi.exists()){
                     try{
                         SaveIO.load(fi);
-                        info("Auto-save loaded.");
+                        info("自动保存已加载。");
                         state.set(State.playing);
                         netServer.openServer();
                     }catch(Throwable e){
@@ -172,20 +171,20 @@ public class ServerControl implements ApplicationListener{
 
             if(args.length > 0){
                 commands.addAll(Strings.join(" ", args).split(","));
-                info("Found @ command-line arguments to parse.", commands.size);
+                info("找到 @ 个命令行参数待解析。", commands.size);
             }
 
             if(!Config.startCommands.string().isEmpty()){
                 String[] startup = Strings.join(" ", Config.startCommands.string()).split(",");
-                info("Found @ startup commands.", startup.length);
+                info("找到 @ 个启动命令。", startup.length);
                 commands.addAll(startup);
             }
 
             for(String s : commands){
                 CommandResponse response = handler.handleMessage(s);
                 if(response.type != ResponseType.valid){
-                    err("Invalid command argument sent: '@': @", s, response.type.name());
-                    err("Argument usage: &lb<command-1> <command1-args...>,<command-2> <command-2-args2...>");
+                    err("发送了无效的命令参数：'@'：@", s, response.type.name());
+                    err("参数用法：&lb<command-1> <command1-args...>,<command-2> <command-2-args2...>");
                 }
             }
         });
@@ -193,8 +192,8 @@ public class ServerControl implements ApplicationListener{
         customMapDirectory.mkdirs();
 
         if(Version.build == -1){
-            warn("&lyYour server is running a custom build, which means that client checking is disabled.");
-            warn("&lyIt is highly advised to specify which version you're using by building with gradle args &lb&fb-Pbuildversion=&lr<build>");
+            warn("&ly您的服务器正在运行自定义构建，这意味着客户端检查已被禁用。");
+            warn("&ly强烈建议通过使用 gradle 参数 &lb&fb-Pbuildversion=&lr<build> 指定您所使用的版本。");
         }
 
         //set up default shuffle mode
@@ -237,13 +236,13 @@ public class ServerControl implements ApplicationListener{
 
                     String fileName = "auto_" + mapName + "_" + date + "." + saveExtension;
                     Fi file = saveDirectory.child(fileName);
-                    info("Autosaving...");
+                    info("正在进行自动保存...");
 
                     try{
                         SaveIO.save(file);
-                        info("Autosave completed.");
+                        info("自动保存已完成。");
                     }catch(Throwable e){
-                        err("Autosave failed.", e);
+                        err("自动保存失败。", e);
                     }
                 }
             }
@@ -259,7 +258,7 @@ public class ServerControl implements ApplicationListener{
                 JsonValue value = JsonIO.json.fromJson(null, Core.settings.getString("globalrules"));
                 JsonIO.json.readFields(state.rules, value);
             }catch(Throwable t){
-                err("Error applying custom rules, proceeding without them.", t);
+                err("应用自定义规则时出错，将不使用它们继续。", t);
             }
         });
 
@@ -271,13 +270,13 @@ public class ServerControl implements ApplicationListener{
         }, saveInterval, saveInterval);
 
         if(!mods.orderedMods().isEmpty()){
-            info("@ mods loaded.", mods.orderedMods().size);
+            info("@ 个模组已加载。", mods.orderedMods().size);
         }
 
         int unsupported = mods.list().count(l -> !l.enabled());
 
         if(unsupported > 0){
-            Log.err("There were errors loading @ mod(s):", unsupported);
+            Log.err("加载 @ 个模组时出现错误。"):", unsupported);
             for(LoadedMod mod : mods.list().select(l -> !l.enabled())){
                 Log.err("- @ &ly(" + mod.state + ")", mod.meta.name);
             }
@@ -292,7 +291,7 @@ public class ServerControl implements ApplicationListener{
                 thread.start();
             }
 
-            info("Server loaded. Type @ for help.", "'help'");
+            info("服务器已加载。输入 @ 获取帮助。", "'help'");
         });
 
         Events.on(SaveLoadEvent.class, e -> {
@@ -322,44 +321,44 @@ public class ServerControl implements ApplicationListener{
     }
 
     protected void registerCommands(){
-        handler.register("help", "[command]", "Display the command list, or get help for a specific command.", arg -> {
+        handler.register("help", "[命令]", "显示命令列表，或获取特定命令的帮助", arg -> {
             if(arg.length > 0){
                 Command command = handler.getCommandList().find(c -> c.text.equalsIgnoreCase(arg[0]));
                 if(command == null){
-                    err("Command " + arg[0] + " not found!");
+                    err("未找到命令 " + arg[0] + "！");
                 }else{
                     info(command.text + ":");
-                    info("  &b&lb " + command.text + (command.paramText.isEmpty() ? "" : " &lc&fi") + command.paramText + "&fr - &lw" + command.description);
+                    info("  &b&lb}" + command.text + (command.paramText.isEmpty() ? "" : " &lc&fi") + command.paramText + "&fr - &lw" + command.description);
                 }
             }else{
-                info("Commands:");
+                info("命令：");
                 for(Command command : handler.getCommandList()){
-                    info("  &b&lb " + command.text + (command.paramText.isEmpty() ? "" : " &lc&fi") + command.paramText + "&fr - &lw" + command.description);
+                    info("  &b&lb}" + command.text + (command.paramText.isEmpty() ? "" : " &lc&fi") + command.paramText + "&fr - &lw" + command.description);
                 }
             }
         });
 
-        handler.register("version", "Displays server version info.", arg -> {
-            info("Version: Mindustry @-@ @ / build @", Version.number, Version.modifier, Version.type, Version.build + (Version.revision == 0 ? "" : "." + Version.revision));
-            info("Java Version: @", OS.javaVersion);
+        handler.register("version", "显示服务器版本信息", arg -> {
+            info("版本：Mindustry @-@ @ / 构建 @", Version.number, Version.modifier, Version.type, Version.build + (Version.revision == 0 ? "" : "." + Version.revision));
+            info("Java 版本：@", OS.javaVersion);
         });
 
-        handler.register("exit", "Exit the server application.", arg -> {
-            info("Shutting down server.");
+        handler.register("exit", "退出服务器程序", arg -> {
+            info("正在关闭服务器。");
             net.dispose();
             Core.app.exit();
         });
 
-        handler.register("stop", "Stop hosting the server.", arg -> {
+        handler.register("stop", "停止托管服务器", arg -> {
             net.closeServer();
             cancelPlayTask();
             state.set(State.menu);
-            info("Stopped server.");
+            info("已停止系统。");
         });
 
-        handler.register("host", "[mapname] [mode]", "Open the server. Will default to survival and a random map if not specified.", arg -> {
+        handler.register("host", "[地图名] [模式]", "启动服务器。如果未指定将使用随机地图与生存模式", arg -> {
             if(state.isGame()){
-                err("Already hosting. Type 'stop' to stop hosting first.");
+                err("已主持。键入 'stop' 以停止主持。");
                 return;
             }
 
@@ -371,7 +370,7 @@ public class ServerControl implements ApplicationListener{
                 try{
                     preset = Gamemode.valueOf(arg[1]);
                 }catch(IllegalArgumentException e){
-                    err("No gamemode '@' found.", arg[1]);
+                    err("找不到游戏模式 '@'。", arg[1]);
                     return;
                 }
             }
@@ -381,15 +380,15 @@ public class ServerControl implements ApplicationListener{
                 result = maps.all().find(map -> map.plainName().replace('_', ' ').equalsIgnoreCase(Strings.stripColors(arg[0]).replace('_', ' ')));
 
                 if(result == null){
-                    err("No map with name '@' found.", arg[0]);
+                    err("找不到名为 '@' 的地图。", arg[0]);
                     return;
                 }
             }else{
                 result = maps.getShuffleMode().next(preset, state.map);
-                info("Randomized next map to be @.", result.plainName());
+                info("已随机选择下一张地图为 @。", system.plainName());
             }
 
-            info("Loading map...");
+            info("正在加载地图...");
 
             logic.reset();
             lastMode = preset;
@@ -399,7 +398,7 @@ public class ServerControl implements ApplicationListener{
                 state.rules = result.applyRules(preset);
                 logic.play();
 
-                info("Map loaded.");
+                info("地图已加载。");
 
                 netServer.openServer();
 
@@ -408,11 +407,11 @@ public class ServerControl implements ApplicationListener{
                     autoPaused = true;
                 }
             }catch(MapException e){
-                err("@: @", e.map.plainName(), e.getMessage());
+                err("@: @", e.map.plainName())), e.getMessage());
             }
         });
 
-        handler.register("maps", "[all/custom/default]", "Display available maps. Displays only custom maps by default.", arg -> {
+        handler.register("maps", "[all/custom/default]", "显示可用地图。默认仅显示自定义地图。", arg -> {
             boolean custom = arg.length == 0 || arg[0].equals("custom") || arg[0].equals("all");
             boolean def = arg.length > 0 && (arg[0].equals("default") || arg[0].equals("all"));
 
@@ -423,9 +422,9 @@ public class ServerControl implements ApplicationListener{
                 if(def) all.addAll(maps.defaultMaps());
 
                 if(all.isEmpty()){
-                    info("No custom maps loaded. &fiTo display built-in maps, use the \"@\" argument.", "all");
+                    info("未加载任何自定义地图。&fi要显示内置地图，请使用 \"@\" 参数。", "all");
                 }else{
-                    info("Maps:");
+                    info("地图：");
 
                     for(Map map : all){
                         String mapName = map.plainName().replace(' ', '_');
@@ -437,98 +436,98 @@ public class ServerControl implements ApplicationListener{
                     }
                 }
             }else{
-                info("No maps found.");
+                info("没有找到地图。");
             }
-            info("Map directory: &fi@", customMapDirectory.file().getAbsoluteFile().toString());
+            info("地图目录：&fi@", customMapDirectory.file()).getAbsoluteFile().toString());
         });
 
-        handler.register("reloadmaps", "Reload all maps from disk.", arg -> {
+        handler.register("reloadmaps", "从硬盘中重载所有地图", arg -> {
             int beforeMaps = maps.all().size;
             maps.reload();
             if(maps.all().size > beforeMaps){
-                info("@ new map(s) found and reloaded.", maps.all().size - beforeMaps);
+                info("@ 张新地图") found and reloaded.", maps.all().size - beforeMaps);
             }else if(maps.all().size < beforeMaps){
-                info("@ old map(s) deleted.", beforeMaps - maps.all().size);
+                info("@ 张旧地图") deleted.", beforeMaps - maps.all().size);
             }else{
-                info("Maps reloaded.");
+                info("地图已重新加载。");
             }
         });
 
-        handler.register("status", "Display server status.", arg -> {
+        handler.register("status", "显示服务器状态", arg -> {
             if(state.isMenu()){
-                info("Status: &rserver closed");
+                info("状态：&r服务器关闭");
             }else{
-                info("Status:");
-                info("  Playing on map &fi@ / Wave @", Strings.capitalize(state.map.plainName()), state.wave);
+                info("状态：");
+                info("  在地图 &fi@ / 第 @ 波玩游戏", Strings.capitalize(state.map.plainName())), state.wave);
 
                 if(state.rules.waves){
-                    info("  @ seconds until next wave.", (int)(state.wavetime / 60));
+                    info("  还有 @ 秒到下一波。", (int)(state.wavetime / 60));
                 }
-                info("  @ units / @ enemies", Groups.unit.size(), state.enemies);
+                info("  @ 个单位 / @ 个敌人", Groups.unit.size()), state.enemies);
 
-                info("  @ FPS, @ MB used.", Core.graphics.getFramesPerSecond(), Core.app.getJavaHeap() / 1024 / 1024);
+                info("  @ 帧/秒，@ MB 已使用。", Core.graphics.getFramesPerSecond(), Core.app.getJavaHeap() / 1024 / 1024);
 
                 if(Groups.player.size() > 0){
-                    info("  Players: @", Groups.player.size());
+                    info("  玩家：@", Groups.player.size()));
                     for(Player p : Groups.player){
-                        info("    @ @ / @", p.admin() ? "&r[A]&c" : "&b[P]&c", p.plainName(), p.uuid());
+                        info("    @ @ / @", p.admin())) ? "&r[A]&c" : "&b[P]&c", p.plainName(), p.uuid());
                     }
                 }else{
-                    info("  No players connected.");
+                    info("  无玩家连接。");
                 }
             }
         });
 
-        handler.register("mods", "Display all loaded mods.", arg -> {
+        handler.register("mods", "显示所有已加载模组", arg -> {
             if(!mods.list().isEmpty()){
-                info("Mods:");
+                info("模组：");
                 for(LoadedMod mod : mods.list()){
-                    info("  @ &fi@ " + (mod.enabled() ? "" : " &lr(" + mod.state + ")"), mod.meta.displayName, mod.meta.version);
+                    info("  @ &fi@ " + (mod.enabled())) ? "" : " &lr(" + mod.state + ")"), mod.meta.displayName, mod.meta.version);
                 }
             }else{
-                info("No mods found.");
+                info("未找到模组。");
             }
-            info("Mod directory: &fi@", modDirectory.file().getAbsoluteFile().toString());
+            info("模组目录：&fi@", modDirectory.file()).getAbsoluteFile().toString());
         });
 
-        handler.register("mod", "<name...>", "Display information about a loaded plugin.", arg -> {
+        handler.register("mod", "<名称...>", "显示已加载插件的信息", arg -> {
             LoadedMod mod = mods.list().find(p -> p.meta.name.equalsIgnoreCase(arg[0]));
             if(mod != null){
-                info("Name: @", mod.meta.displayName);
-                info("Internal Name: @", mod.name);
-                info("Version: @", mod.meta.version);
-                info("Author: @", mod.meta.author);
-                info("Path: @", mod.file.path());
-                info("Description: @", mod.meta.description);
+                info("名称：@", mod.meta.displayName);
+                info("内部名称：@", mod.name);
+                info("版本：@", mod.meta.version);
+                info("作者：@", mod.meta.author);
+                info("路径：@", mod.file.path()));
+                info("描述：@", mod.meta.description);
             }else{
-                info("No mod with name '@' found.", arg[0]);
+                info("未找到名为 '@' 的模组。", arg[0]);
             }
         });
 
-        handler.register("js", "<script...>", "Run arbitrary Javascript.", arg -> {
-            info("&fi&lw&fb" + mods.getScripts().runConsole(arg[0]));
+        handler.register("js", "<脚本...>", "执行任意JS", arg -> {
+            info("&fi&lw&fb" + mods.getScripts())).runConsole(arg[0]));
         });
 
-        handler.register("say", "<message...>", "Send a message to all players.", arg -> {
+        handler.register("say", "<消息...>", "对所有玩家发送消息", arg -> {
             if(!state.isGame()){
-                err("Not hosting. Host a game first.");
+                err("未主持。首先主持游戏。");
                 return;
             }
 
-            Call.sendMessage("[scarlet][[Server]:[] " + arg[0]);
+            Call.sendMessage("[scarlet][[服务器]:[] " + arg[0]);
 
-            info("&fi&lcServer: &fr@", "&lw" + arg[0]);
+            info("&fi&lc服务器：&fr@", "&lw" + arg[0]);
         });
 
-        handler.register("pause", "<on/off>", "Pause or unpause the game.", arg -> {
+        handler.register("pause", "<on/off>", "控制游戏暂停", arg -> {
             if(state.isMenu()){
-                err("Cannot pause without a game running.");
+                err("没有游戏运行时无法暂停。");
                 return;
             }
             boolean pause = arg[0].equals("on");
             autoPaused = false;
             state.set(pause ? State.paused : State.playing);
-            info(pause ? "Game paused." : "Game unpaused.");
+            info(pause ? "游戏已暂停。" : "游戏已取消暂停。");
         });
 
         handler.register("rules", "[remove/add] [name] [value...]", "List, remove or add global rules. These will apply regardless of map.", arg -> {
@@ -536,27 +535,28 @@ public class ServerControl implements ApplicationListener{
             JsonValue base = JsonIO.json.fromJson(null, rules);
 
             if(arg.length == 0){
-                info("Rules:\n@", JsonIO.print(rules));
+                info("规则：
+@", JsonIO.print(rules)));
             }else if(arg.length == 1){
-                err("Invalid usage. Specify which rule to remove or add.");
+                err("使用不当。指定要移除或添加的规则。");
             }else{
                 if(!(arg[0].equals("remove") || arg[0].equals("add"))){
-                    err("Invalid usage. Either add or remove rules.");
+                    err("使用不当。要么添加规则，要么移除规则。");
                     return;
                 }
 
                 boolean remove = arg[0].equals("remove");
                 if(remove){
                     if(base.has(arg[1])){
-                        info("Rule '@' removed.", arg[1]);
+                        info("已移除规则 '@'", arg[1]);
                         base.remove(arg[1]);
                     }else{
-                        err("Rule not defined, so not removed.");
+                        err("未定义规则，因此未更新。");
                         return;
                     }
                 }else{
                     if(arg.length < 3){
-                        err("Missing last argument. Specify which value to set the rule to.");
+                        err("缺少最后一个参数。指定要设置规则的值。");
                         return;
                     }
 
@@ -572,9 +572,9 @@ public class ServerControl implements ApplicationListener{
                             base.remove(value.name);
                         }
                         base.addChild(arg[1], value);
-                        info("Changed rule: @", value.toString().replace("\n", " "));
+                        info("更改的规则：@", value.toString()).replace("\n", " "));
                     }catch(Throwable e){
-                        err("Error parsing rule JSON: @", e.getMessage());
+                        err("解析规则 JSON 时出错：@", e.getMessage()));
                     }
                 }
 
@@ -583,21 +583,21 @@ public class ServerControl implements ApplicationListener{
             }
         });
 
-        handler.register("fillitems", "[team]", "Fill the core with items.", arg -> {
+        handler.register("fillitems", "[队伍]", "填充队伍核心", arg -> {
             if(!state.isGame()){
-                err("Not playing. Host first.");
+                err("未玩游戏。先主持。");
                 return;
             }
 
             Team team = arg.length == 0 ? Team.sharded : Structs.find(Team.all, t -> t.name.equals(arg[0]));
 
             if(team == null){
-                err("No team with that name found.");
+                err("未找到该名称的队伍。");
                 return;
             }
 
             if(state.teams.cores(team).isEmpty()){
-                err("That team has no cores.");
+                err("该队伍无核心。");
                 return;
             }
 
@@ -605,34 +605,34 @@ public class ServerControl implements ApplicationListener{
                 state.teams.cores(team).first().items.set(item, state.teams.cores(team).first().storageCapacity);
             }
 
-            info("Core filled.");
+            info("核心已填满。");
         });
 
-        handler.register("playerlimit", "[off/somenumber]", "Set the server player limit.", arg -> {
+        handler.register("playerlimit", "[off/somenumber]", "设置服务器玩家限制", arg -> {
             if(arg.length == 0){
-                info("Player limit is currently @.", netServer.admins.getPlayerLimit() == 0 ? "off" : netServer.admins.getPlayerLimit());
+                info("当前玩家限制为 @。", netServer.admins.getPlayerLimit()) == 0 ? "off" : netServer.admins.getPlayerLimit());
                 return;
             }
             if(arg[0].equals("off")){
                 netServer.admins.setPlayerLimit(0);
-                info("Player limit disabled.");
+                info("已禁用玩家限制。");
                 return;
             }
 
             if(Strings.canParsePositiveInt(arg[0]) && Strings.parseInt(arg[0]) > 0){
                 int lim = Strings.parseInt(arg[0]);
                 netServer.admins.setPlayerLimit(lim);
-                info("Player limit is now &lc@.", lim);
+                info("玩家限制现在是 &lc@。", lim);
             }else{
-                err("Limit must be a number above 0.");
+                err("限制必须为大于 0 的数字。");
             }
         });
 
-        handler.register("config", "[name] [value...]", "Configure server settings.", arg -> {
+        handler.register("config", "[名称] [值...]", "设置服务器配置", arg -> {
             if(arg.length == 0){
-                info("All config values:");
+                info("所有配置值：");
                 for(Config c : Config.all){
-                    info("&lk| @: @", c.name, "&lc&fi" + c.get());
+                    info("&lk| @: @", c.name, "&lc&fi" + c.get())));
                     info("&lk| | &lw" + c.description);
                     info("&lk|");
                 }
@@ -643,7 +643,7 @@ public class ServerControl implements ApplicationListener{
 
             if(c != null){
                 if(arg.length == 1){
-                    info("'@' is currently @.", c.name, c.get());
+                    info("'@' 当前为 @。", c.name, c.get()));
                 }else{
                     if(arg[1].equals("default")){
                         c.set(c.defaultValue);
@@ -653,212 +653,212 @@ public class ServerControl implements ApplicationListener{
                         try{
                             c.set(Integer.parseInt(arg[1]));
                         }catch(NumberFormatException e){
-                            err("Not a valid number: @", arg[1]);
+                            err("不是一个有效的数字：@", arg[1]);
                             return;
                         }
                     }else if(c.isString()){
                         c.set(arg[1].replace("\\n", "\n"));
                     }
 
-                    info("@ set to @.", c.name, c.get());
+                    info("@ 设置为 @。", c.name, c.get()));
                     Core.settings.forceSave();
                 }
             }else{
-                err("Unknown config: '@'. Run the command with no arguments to get a list of valid configs.", arg[0]);
+                err("未知配置：'@'。使用不带参数的命令以获取有效配置列表。", arg[0]);
             }
         });
 
-        handler.register("subnet-ban", "[add/remove] [address]", "Ban a subnet. This simply rejects all connections with IPs starting with some string.", arg -> {
+        handler.register("subnet-ban", "[add/remove] [address]", "禁止一个子网。这将简单地拒绝所有以某一字符串开头的IP地址的连接。", arg -> {
             if(arg.length == 0){
-                info("Subnets banned: @", netServer.admins.getSubnetBans().isEmpty() ? "<none>" : "");
+                info("子网被禁止：@", netServer.admins.getSubnetBans()).isEmpty() ? "<none>" : "");
                 for(String subnet : netServer.admins.getSubnetBans()){
                     info("&lw  " + subnet);
                 }
             }else if(arg.length == 1){
-                err("You must provide a subnet to add or remove.");
+                err("您必须提供一个子网以添加或移除。");
             }else{
                 if(arg[0].equals("add")){
                     if(netServer.admins.getSubnetBans().contains(arg[1])){
-                        err("That subnet is already banned.");
+                        err("该子网已禁止。");
                         return;
                     }
 
                     netServer.admins.addSubnetBan(arg[1]);
-                    info("Banned @**", arg[1]);
+                    info("已禁止 @**", arg[1]);
                 }else if(arg[0].equals("remove")){
                     if(!netServer.admins.getSubnetBans().contains(arg[1])){
-                        err("That subnet isn't banned.");
+                        err("该子网未被禁止。");
                         return;
                     }
 
                     netServer.admins.removeSubnetBan(arg[1]);
-                    info("Unbanned @**", arg[1]);
+                    info("已解禁 @**", arg[1]);
                 }else{
-                    err("Incorrect usage. Provide add/remove as the second argument.");
+                    err("使用不正确。提供 add/remove 作为第二个参数。");
                 }
             }
         });
 
-        handler.register("whitelist", "[add/remove] [ID]", "Add/remove players from the whitelist using their ID.", arg -> {
+        handler.register("whitelist", "[add/remove] [ID]", "使用玩家ID将玩家添加/移除到白名单中。", arg -> {
             if(arg.length == 0){
                 Seq<PlayerInfo> whitelist = netServer.admins.getWhitelisted();
 
                 if(whitelist.isEmpty()){
-                    info("No whitelisted players found.");
+                    info("未找到白名单玩家。");
                 }else{
-                    info("Whitelist:");
-                    whitelist.each(p -> info("- Name: @ / UUID: @", p.plainLastName(), p.id));
+                    info("白名单：");
+                    whitelist.each(p -> info("- 名称：@ / UUID：@", p.plainLastName()), p.id));
                 }
             }else{
                 if(arg.length == 2){
                     PlayerInfo info = netServer.admins.getInfoOptional(arg[1]);
 
                     if(info == null){
-                        err("Player ID not found. You must use the ID displayed when a player joins a server.");
+                        err("玩家 ID 未找到。您必须使用玩家加入服务器时显示的 ID。");
                     }else{
                         if(arg[0].equals("add")){
                             netServer.admins.whitelist(arg[1]);
-                            info("Player '@' has been whitelisted.", info.plainLastName());
+                            info("玩家 '@' 已被加入白名单。", info.plainLastName()));
                         }else if(arg[0].equals("remove")){
                             netServer.admins.unwhitelist(arg[1]);
-                            info("Player '@' has been un-whitelisted.", info.plainLastName());
+                            info("玩家 '@' 已被移出白名单。", info.plainLastName()));
                         }else{
-                            err("Incorrect usage. Provide add/remove as the second argument.");
+                            err("使用不正确。提供 add/remove 作为第二个参数。");
                         }
                     }
                 }else{
-                    err("Incorrect usage. Provide an ID to add or remove.");
+                    err("提供一个 ID 以添加或移除。");
                 }
             }
         });
 
         //TODO should be a config, not a separate command.
-        handler.register("shuffle", "[none/all/custom/builtin]", "Set map shuffling mode.", arg -> {
+        handler.register("shuffle", "[none/all/custom/builtin]", "设置地图洗牌模式。", arg -> {
             if(arg.length == 0){
-                info("Shuffle mode current set to '@'.", maps.getShuffleMode());
+                info("洗牌模式当前设置为 '@'。", maps.getShuffleMode()));
             }else{
                 try{
                     ShuffleMode mode = ShuffleMode.valueOf(arg[0]);
                     Core.settings.put("shufflemode", mode.name());
                     maps.setShuffleMode(mode);
-                    info("Shuffle mode set to '@'.", arg[0]);
+                    info("洗牌模式设置为 '@'。", arg[0]);
                 }catch(Exception e){
-                    err("Invalid shuffle mode.");
+                    err("无效的洗牌模式。");
                 }
             }
         });
 
-        handler.register("nextmap", "<mapname...>", "Set the next map to be played after a game-over. Overrides shuffling.", arg -> {
+        handler.register("nextmap", "<地图名...>", "设置游戏结束后要玩的下一张地图。覆盖洗牌设置。", arg -> {
             Map res = maps.all().find(map -> map.plainName().replace('_', ' ').equalsIgnoreCase(Strings.stripColors(arg[0]).replace('_', ' ')));
             if(res != null){
                 maps.setNextMapOverride(res);
-                info("Next map set to '@'.", res.plainName());
+                info("下一地图设置为 '@'。", res.plainName()));
             }else{
-                err("No map '@' found.", arg[0]);
+                err("未找到地图 '@'。", arg[0]);
             }
         });
 
-        handler.register("kick", "<username...>", "Kick a person by name.", arg -> {
+        handler.register("kick", "<玩家名...>", "用名称踢出某玩家", arg -> {
             if(!state.isGame()){
-                err("Not hosting a game yet. Calm down.");
+                err("尚未主持游戏。冷静下来。");
                 return;
             }
 
             Player target = Groups.player.find(p -> p.name().equals(arg[0]));
 
             if(target != null){
-                Call.sendMessage("[scarlet]" + target.name() + "[scarlet] has been kicked by the server.");
+                Call.sendMessage("[scarlet]" + target.name() + "[scarlet] 被踢出服务器");
                 target.kick(KickReason.kick);
-                info("It is done.");
+                info("完成。");
             }else{
-                info("Nobody with that name could be found...");
+                info("未找到该名字的人...");
             }
         });
 
-        handler.register("ban", "<type-id/name/ip> <username/IP/ID...>", "Ban a person.", arg -> {
+        handler.register("ban", "<type-id/name/ip> <username/IP/ID...>", "Ban某人", arg -> {
             if(arg[0].equals("id")){
                 netServer.admins.banPlayerID(arg[1]);
-                info("Banned.");
+                info("已禁止。");
             }else if(arg[0].equals("name")){
                 Player target = Groups.player.find(p -> p.name().equalsIgnoreCase(arg[1]));
                 if(target != null){
                     netServer.admins.banPlayer(target.uuid());
-                    info("Banned.");
+                    info("已禁止。");
                 }else{
-                    err("No matches found.");
+                    err("未找到匹配项。");
                 }
             }else if(arg[0].equals("ip")){
                 netServer.admins.banPlayerIP(arg[1]);
-                info("Banned.");
+                info("已禁止。");
             }else{
-                err("Invalid type.");
+                err("无效类型。");
             }
 
             for(Player player : Groups.player){
                 if(netServer.admins.isIDBanned(player.uuid())){
-                    Call.sendMessage("[scarlet]" + player.name + " has been banned.");
+                    Call.sendMessage("[scarlet]" + player.name + " 被服务器Ban出");
                     player.con.kick(KickReason.banned);
                 }
             }
         });
 
-        handler.register("bans", "List all banned IPs and IDs.", arg -> {
+        handler.register("bans", "列出所有被ban ip或id", arg -> {
             Seq<PlayerInfo> bans = netServer.admins.getBanned();
 
             if(bans.size == 0){
-                info("No ID-banned players have been found.");
+                info("未找到 ID 禁止的玩家。");
             }else{
-                info("Banned players [ID]:");
+                info("已禁止玩家 [ID]：");
                 for(PlayerInfo info : bans){
-                    info(" @ / Last known name: '@'", info.id, info.plainLastName());
+                    info(" @ / 最后已知名字：'@'", info.id, info.plainLastName()));
                 }
             }
 
             Seq<String> ipbans = netServer.admins.getBannedIPs();
 
             if(ipbans.size == 0){
-                info("No IP-banned players have been found.");
+                info("未找到 IP 禁止的玩家。");
             }else{
-                info("Banned players [IP]:");
+                info("已禁止玩家 [IP]：");
                 for(String string : ipbans){
                     PlayerInfo info = netServer.admins.findByIP(string);
                     if(info != null){
-                        info("  '@' / Last known name: '@' / ID: '@'", string, info.plainLastName(), info.id);
+                        info("  '@' / 最后已知名字：'@' / ID：'@'", string, info.plainLastName()), info.id);
                     }else{
-                        info("  '@' (No known name or info)", string);
+                        info("  '@' (无已知名字或信息)")", string);
                     }
                 }
             }
         });
 
-        handler.register("unban", "<ip/ID>", "Completely unban a person by IP or ID.", arg -> {
+        handler.register("unban", "<ip/ID>", "取消Ban", arg -> {
             if(netServer.admins.unbanPlayerIP(arg[0]) || netServer.admins.unbanPlayerID(arg[0])){
-                info("Unbanned player: @", arg[0]);
+                info("已解禁玩家：@", arg[0]);
             }else{
-                err("That IP/ID is not banned!");
+                err("该 IP/ID 未被禁止！");
             }
         });
 
-        handler.register("pardon", "<ID>", "Pardons a votekicked player by ID and allows them to join again.", arg -> {
+        handler.register("pardon", "<ID>", "通过ID赦免被投票踢出的玩家，允许其再次加入。", arg -> {
             PlayerInfo info = netServer.admins.getInfoOptional(arg[0]);
 
             if(info != null){
                 info.lastKicked = 0;
                 netServer.admins.kickedIPs.remove(info.lastIP);
-                info("Pardoned player: @", info.plainLastName());
+                info("已赦免玩家：@", info.plainLastName()));
             }else{
-                err("That ID can't be found.");
+                err("无法找到该 ID。");
             }
         });
 
-        handler.register("admin", "<add/remove> <username/ID...>", "Make an online user admin", arg -> {
+        handler.register("admin", "<add/remove> <username/ID...>", "添加服务器管理员", arg -> {
             if(!state.isGame()){
-                err("Open the server first.");
+                err("首先打开服务器。");
                 return;
             }
 
             if(!(arg[0].equals("add") || arg[0].equals("remove"))){
-                err("Second parameter must be either 'add' or 'remove'.");
+                err("第二个参数必须是 'add' 或 'remove'。");
                 return;
             }
 
@@ -880,60 +880,60 @@ public class ServerControl implements ApplicationListener{
                     netServer.admins.unAdminPlayer(target.id);
                 }
                 if(playert != null) playert.admin = add;
-                info("Changed admin status of player: @", target.plainLastName());
+                info("更改了玩家的管理员状态：@", target.plainLastName()));
             }else{
-                err("Nobody with that name or ID could be found. If adding an admin by name, make sure they're online; otherwise, use their UUID.");
+                err("未找到具有该名字或 ID 的人。如果按名字添加管理员，请确保他们在线；否则，使用其 UUID。");
             }
         });
 
-        handler.register("admins", "List all admins.", arg -> {
+        handler.register("admins", "列出管理员", arg -> {
             Seq<PlayerInfo> admins = netServer.admins.getAdmins();
 
             if(admins.size == 0){
-                info("No admins have been found.");
+                info("未找到管理员。");
             }else{
-                info("Admins:");
+                info("管理员：");
                 for(PlayerInfo info : admins){
-                    info(" &lm @ /  ID: '@' / IP: '@'", info.plainLastName(), info.id, info.lastIP);
+                    info(" &lm @ / ID：'@' / IP：'@'", info.plainLastName()), info.id, info.lastIP);
                 }
             }
         });
 
-        handler.register("players", "List all players currently in game.", arg -> {
+        handler.register("players", "列出当前游戏中所有玩家。", arg -> {
             if(Groups.player.size() == 0){
-                info("No players are currently in the server.");
+                info("当前没有玩家在服务器上。");
             }else{
-                info("Players: @", Groups.player.size());
+                info("玩家：@", Groups.player.size()));
                 for(Player user : Groups.player){
-                    info(" @&lm @ / ID: @ / IP: @", user.admin ? "&r[A]&c" : "&b[P]&c", user.plainName(), user.uuid(), user.ip());
+                    info(" @&lm @ / ID：@ / IP：@", user.admin ? "&r[A]&c" : "&b[P]&c", user.plainName()), user.uuid(), user.ip());
                 }
             }
         });
 
-        handler.register("runwave", "Trigger the next wave.", arg -> {
+        handler.register("runwave", "触发下一波。", arg -> {
             if(!state.isGame()){
-                err("Not hosting. Host a game first.");
+                err("未主持。首先主持游戏。");
             }else{
                 logic.runWave();
-                info("Wave spawned.");
+                info("生成波次。");
             }
         });
 
-        handler.register("loadautosave", "Loads the last auto-save.", arg -> {
+        handler.register("loadautosave", "加载上一次自动保存。", arg -> {
             if(state.isGame()){
-                err("Already hosting. Type 'stop' to stop hosting first.");
+                err("已主持。键入 'stop' 以停止主持。");
                 return;
             }
 
             Fi newestSave = saveDirectory.findAll(f -> f.name().startsWith("auto_")).min(Fi::lastModified);
 
             if(newestSave == null){
-                err("No auto-saves found! Type `config autosave true` to enable auto-saves.");
+                err("未找到自动保存！键入 `config autosave true` 以启用自动保存。");
                 return;
             }
 
             if(!SaveIO.isSaveValid(newestSave)){
-                err("No (valid) save data found for slot.");
+                err("未找到（有效的）") save data found for slot.");
                 return;
             }
 
@@ -941,25 +941,25 @@ public class ServerControl implements ApplicationListener{
                 try{
                     SaveIO.load(newestSave);
                     state.rules.sector = null;
-                    info("Save loaded.");
+                    info("已加载保存。");
                     state.set(State.playing);
                     netServer.openServer();
                 }catch(Throwable t){
-                    err("Failed to load save. Outdated or corrupt file.");
+                    err("加载保存失败。文件过时或损坏。");
                 }
             });
         });
 
-        handler.register("load", "<slot>", "Load a save from a slot.", arg -> {
+        handler.register("load", "<存档槽>", "从指定存档槽加载存档。", arg -> {
             if(state.isGame()){
-                err("Already hosting. Type 'stop' to stop hosting first.");
+                err("已主持。键入 'stop' 以停止主持。");
                 return;
             }
 
             Fi file = saveDirectory.child(arg[0] + "." + saveExtension);
 
             if(!SaveIO.isSaveValid(file)){
-                err("No (valid) save data found for slot.");
+                err("未找到（有效的）") save data found for slot.");
                 return;
             }
 
@@ -967,18 +967,18 @@ public class ServerControl implements ApplicationListener{
                 try{
                     SaveIO.load(file);
                     state.rules.sector = null;
-                    info("Save loaded.");
+                    info("已加载保存。");
                     state.set(State.playing);
                     netServer.openServer();
                 }catch(Throwable t){
-                    err("Failed to load save. Outdated or corrupt file.");
+                    err("加载保存失败。文件过时或损坏。");
                 }
             });
         });
 
-        handler.register("save", "<slot>", "Save game state to a slot.", arg -> {
+        handler.register("save", "<存档槽>", "保存状态至存档槽", arg -> {
             if(!state.isGame()){
-                err("Not hosting. Host a game first.");
+                err("未主持。首先主持游戏。");
                 return;
             }
 
@@ -986,75 +986,75 @@ public class ServerControl implements ApplicationListener{
 
             Core.app.post(() -> {
                 SaveIO.save(file);
-                info("Saved to @.", file);
+                info("已保存到 @。", file);
             });
         });
 
-        handler.register("saves", "List all saves in the save directory.", arg -> {
-            info("Save files: ");
+        handler.register("saves", "列出保存目录中的所有存档。", arg -> {
+            info("保存文件： ");
             for(Fi file : saveDirectory.list()){
                 if(file.extension().equals(saveExtension)){
-                    info("| @", file.nameWithoutExtension());
+                    info("| @", file.nameWithoutExtension())));
                 }
             }
         });
 
-        handler.register("gameover", "Force a game over.", arg -> {
+        handler.register("gameover", "强制结束游戏。", arg -> {
             if(state.isMenu()){
-                err("Not playing a map.");
+                err("未玩任何地图。");
                 return;
             }
 
-            info("Core destroyed.");
+            info("核心已摧毁。");
             inGameOverWait = false;
             Events.fire(new GameOverEvent(state.rules.waveTeam));
         });
 
-        handler.register("info", "<IP/UUID/name...>", "Find player info(s). Can optionally check for all names or IPs a player has had.", arg -> {
+        handler.register("info", "<IP/UUID/name...>", "查找玩家信息。可选择性检查玩家曾用的所有名称或IP。", arg -> {
             ObjectSet<PlayerInfo> infos = netServer.admins.findByName(arg[0]);
 
             if(infos.size > 0){
-                info("Players found: @", infos.size);
+                info("找到的玩家：@", infos.size);
 
                 int i = 0;
                 for(PlayerInfo info : infos){
-                    info("[@] Trace info for player '@' / UUID @ / RAW @", i++, info.plainLastName(), info.id, info.lastName);
-                    info("  all names used: @", info.names);
-                    info("  IP: @", info.lastIP);
-                    info("  all IPs used: @", info.ips);
-                    info("  times joined: @", info.timesJoined);
-                    info("  times kicked: @", info.timesKicked);
+                    info("[@] 玩家 '@' / UUID @ / RAW @ 的追踪信息", i++, info.plainLastName()), info.id, info.lastName);
+                    info("  使用过的所有名称：@", info.names);
+                    info("  IP：@", info.lastIP);
+                    info("  使用过的所有IP：@", info.ips);
+                    info("  加入次数：@", info.timesJoined);
+                    info("  被踢次数：@", info.timesKicked);
                 }
             }else{
-                info("Nobody with that name could be found.");
+                info("未找到该名字的任何人。");
             }
         });
 
-        handler.register("search", "<name...>", "Search players who have used part of a name.", arg -> {
+        handler.register("search", "<name...>", "搜索使用过部分名称的玩家。", arg -> {
             ObjectSet<PlayerInfo> infos = netServer.admins.searchNames(arg[0]);
 
             if(infos.size > 0){
-                info("Players found: @", infos.size);
+                info("找到的玩家：@", infos.size);
 
                 int i = 0;
                 for(PlayerInfo info : infos){
-                    info("- [@] '@' / @", i++, info.plainLastName(), info.id);
+                    info("- [@] '@' / @", i++, info.plainLastName())), info.id);
                 }
             }else{
-                info("Nobody with that name could be found.");
+                info("未找到该名字的任何人。");
             }
         });
 
-        handler.register("gc", "Trigger a garbage collection. Testing only.", arg -> {
+        handler.register("gc", "回收内存 测试", arg -> {
             int pre = (int)(Core.app.getJavaHeap() / 1024 / 1024);
             System.gc();
             int post = (int)(Core.app.getJavaHeap() / 1024 / 1024);
-            info("@ MB collected. Memory usage now at @ MB.", pre - post, post);
+            info("@ MB 收集完成。内存使用量现为 @ MB。", pre - post, post);
         });
 
         handler.register("yes", "Run the last suggested incorrect command.", arg -> {
             if(suggested == null){
-                err("There is nothing to say yes to.");
+                err("没有任何可以确认的内容。");
             }else{
                 handleCommandString(suggested);
             }
@@ -1080,15 +1080,15 @@ public class ServerControl implements ApplicationListener{
             }
 
             if(closest != null && !closest.text.equals("yes")){
-                err("Command not found. Did you mean \"" + closest.text + "\"?");
+                err("命令未找到。您是否是指 \"" + closest.text + "\"？");
                 suggested = line.replace(response.runCommand, closest.text);
             }else{
-                err("Invalid command. Type 'help' for help.");
+                err("无效命令。键入 'help' 获取帮助。");
             }
         }else if(response.type == ResponseType.fewArguments){
-            err("Too few command arguments. Usage: " + response.command.text + " " + response.command.paramText);
+            err("命令参数过少。用法： " + response.command.text + " " + response.command.paramText);
         }else if(response.type == ResponseType.manyArguments){
-            err("Too many command arguments. Usage: " + response.command.text + " " + response.command.paramText);
+            err("命令参数过多。用法： " + response.command.text + " " + response.command.paramText);
         }else if(response.type == ResponseType.valid){
             suggested = null;
         }
@@ -1140,7 +1140,7 @@ public class ServerControl implements ApplicationListener{
                 reloader.end();
                 inGameOverWait = false;
             }catch(MapException e){
-                err("@: @", e.map.plainName(), e.getMessage());
+                err("@: @", e.map.plainName())), e.getMessage());
                 net.closeServer();
             }
         };
@@ -1182,7 +1182,7 @@ public class ServerControl implements ApplicationListener{
                     serverSocket.bind(new InetSocketAddress(Config.socketInputAddress.string(), Config.socketInputPort.num()));
                     while(true){
                         Socket client = serverSocket.accept();
-                        info("&lkReceived command socket connection: &fi@", serverSocket.getLocalSocketAddress());
+                        info("&lk 接收到命令套接字连接：&fi@", serverSocket.getLocalSocketAddress()));
                         BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
                         socketOutput = new PrintWriter(client.getOutputStream(), true);
                         String line;
@@ -1190,14 +1190,14 @@ public class ServerControl implements ApplicationListener{
                             String result = line;
                             Core.app.post(() -> handleCommandString(result));
                         }
-                        info("&lkLost command socket connection: &fi@", serverSocket.getLocalSocketAddress());
+                        info("&lk 失去命令套接字连接：&fi@", serverSocket.getLocalSocketAddress()));
                         socketOutput = null;
                     }
                 }catch(BindException b){
-                    err("Command input socket already in use. Is another instance of the server running?");
+                    err("命令输入套接字已在使用。是否有另一个服务器实例正在运行？");
                 }catch(IOException e){
                     if(!e.getMessage().equals("Socket closed") && !e.getMessage().equals("Connection reset")){
-                        err("Terminating socket server.");
+                        err("终止套接字服务器。");
                         err(e);
                     }
                 }
